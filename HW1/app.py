@@ -6,3 +6,7 @@ app = Flask(__name__)
 def index():
     return render_template("index.html")
 
+@app.route("/profile")
+def profile():
+    my_hobbies = ["음악감상", "독서", "게임"]
+    return render_template("profile.html", hobbies=my_hobbies)
