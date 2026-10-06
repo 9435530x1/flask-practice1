@@ -8,8 +8,8 @@ todos = []
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        todo = request.form['todo']
-        todos.append(todo)
+        todo_text = request.form['todo']
+        todos.append({'text': todo_text, 'done': False})
         return redirect(url_for('index'))
     return render_template('index.html', todos=todos)
 
