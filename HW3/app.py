@@ -23,7 +23,7 @@ def index():
             text=request.form['todo'],
             note=request.form['note']
         )
-        db.session.add(Todo(text=request.form['todo']))
+        db.session.add(todo)
         db.session.commit()
         return redirect(url_for('index'))
 
