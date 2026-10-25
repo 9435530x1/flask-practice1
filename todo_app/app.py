@@ -4,7 +4,7 @@ from flask_restx import Api, Resource, fields
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://flask_user:1111@localhost/flask_todo_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///todo.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["ERROR_404_HELP"] = False
 app.config["RESTX_JSON"] = {"ensure_ascii": False}

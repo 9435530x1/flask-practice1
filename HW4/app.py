@@ -4,7 +4,7 @@ from flask_restx import Api, Resource, fields
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://flask_user:1111@localhost/flask_todo_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///todo.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["ERROR_404_HELP"] = False
 app.config["RESTX_JSON"] = {"ensure_ascii": False}
@@ -15,6 +15,7 @@ class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.String(100), nullable=False)
     done = db.Column(db.Boolean, default=False)
+    note = db.Column(db.String(500), default="")
 
     def __repr__(self):
         return f'<Todo {self.id} {self.text}>'
@@ -57,27 +58,34 @@ todo_model = api.model("Todo", {
     "id": fields.Integer(readonly=True, description="줄 번호. 서버가 붙입니다"),
     "text": fields.String(required=True, description="할 일 글자", example="우유 사기"),
     "done": fields.Boolean(description="완료 여부", example=False),
+    "note": fields.String(description="설명", example="2리터짜리로"),
 })
 
 todo_input = api.model("TodoInput", {
     "text": fields.String(required=True, description="할 일 글자", example="우유 사기"),
     "done": fields.Boolean(description="완료 여부", example=False),
+    "note": fields.String(description="설명", example="2리터짜리로"),
 })
 
 @ns.route("/")
 class TodoList(Resource):
     @ns.doc("목록 보기")
+    @ns.param("done", "true 면 완료만, false 면 아직 안 한 것만")
     @ns.marshal_list_with(todo_model)
     def get(self):
-        """할 일을 전부 돌려준다"""
-        return Todo.query.all()
+        """할 일을 돌려준다. done 을 주면 걸러서 돌려준다"""
+        q = Todo.query
+        done = request.args.get("done")
+        if done is not None:
+            q = q.filter_by(done=(done.lower() == "true"))
+        return q.all()
     
     @ns.doc("새로 만들기")
     @ns.expect(todo_input, validate=True)
     @ns.marshal_with(todo_model, code=201)
     def post(self):
         """할 일을 하나 만든다"""
-        todo = Todo(text=api.payload["text"], done=api.payload.get("done", False))
+        todo = Todo(text=api.payload["text"], done=api.payload.get("done", False),note=api.payload.get("note", ""))
         db.session.add(todo)
         db.session.commit()
         return todo, 201, {"Location": f"/api/todos/{todo.id}"}
@@ -113,6 +121,8 @@ class TodoItem(Resource):
             todo.text = api.payload["text"]
         if "done" in api.payload:
             todo.done = api.payload["done"]
+        if "note" in api.payload:
+            todo.note = api.payload["note"]
         db.session.commit()
         return todo
 
@@ -135,6 +145,8 @@ def get_or_abort(id):
 app.register_blueprint(api_bp)
 
 with app.app_context():
+    print("데이터베이스 경로:", db.engine.url)
+    print("instance 폴더:", app.instance_path)
     db.create_all()
 
 if __name__ == '__main__':
